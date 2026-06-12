@@ -8,6 +8,7 @@ push.log
 push2.log
 earth.txt
 *.txt
+!pkg/ascii/asciilive/*.go
 
 # Runtime data — never bake into image
 data/

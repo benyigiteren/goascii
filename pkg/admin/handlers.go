@@ -441,12 +441,15 @@ func (s *AdminServer) HandleAPIAnimationGet(w http.ResponseWriter, r *http.Reque
 		var matrixState *ascii.MatrixState
 		var fireState *ascii.FireState
 		var hacker3State *ascii.Hacker3State
+		var dvdState *ascii.DVDState
 
 		for tick := 0; tick < count; tick++ {
 			var frame string
 			switch slug {
 			case "earth":
 				frame = ascii.GetEarthFrame(tick, width, height, false)
+			case "dvd":
+				frame = ascii.GetDVDFrame(tick, width, height, dvdState, false)
 			case "matrix":
 				frame, matrixState = ascii.GetMatrixFrame(tick, width, height, matrixState, false)
 			case "donut":

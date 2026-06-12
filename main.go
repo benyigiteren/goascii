@@ -428,6 +428,7 @@ func makeStreamHandler(database *db.DB, dbDir string) http.HandlerFunc {
 		var matrixState *ascii.MatrixState
 		var fireState *ascii.FireState
 		var hacker3State *ascii.Hacker3State
+		var dvdState *ascii.DVDState
 
 		if animMeta.Type == "custom" {
 			var err error
@@ -440,6 +441,8 @@ func makeStreamHandler(database *db.DB, dbDir string) http.HandlerFunc {
 			matrixState = ascii.NewMatrixState(width, height)
 		} else if name == "hacker3" {
 			hacker3State = ascii.NewHacker3State(width, height)
+		} else if name == "dvd" {
+			dvdState = ascii.NewDVDState(width, height)
 		}
 
 		startTime := time.Now()
@@ -467,6 +470,8 @@ func makeStreamHandler(database *db.DB, dbDir string) http.HandlerFunc {
 				switch name {
 				case "earth":
 					frameContent = ascii.GetEarthFrame(tick, width, height, useColor)
+				case "dvd":
+					frameContent = ascii.GetDVDFrame(tick, width, height, dvdState, useColor)
 				case "matrix":
 					frameContent, matrixState = ascii.GetMatrixFrame(tick, width, height, matrixState, useColor)
 				case "donut":
