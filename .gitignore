@@ -1,0 +1,7 @@
+go-ascii.exe
+go-ascii.exe~
+data/db.json
+data/animations/
+.agents/
+*.test
+*.out

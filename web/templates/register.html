@@ -1,0 +1,72 @@
+{{template "header" .}}
+<div style="max-width: 460px; margin: 80px auto 0 auto;">
+    <!-- Inline SVG Logo -->
+    <div style="display: flex; justify-content: center; margin-bottom: 24px;">
+        <svg viewBox="0 0 120 40" width="150" height="50" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="116" height="36" rx="8" fill="#111111" stroke="#EAEAEA" stroke-width="1.5" />
+            <path d="M12 14L18 20L12 26" stroke="#346538" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <line x1="22" y1="26" x2="30" y2="26" stroke="#346538" stroke-width="2.5" stroke-linecap="round" />
+            <text x="36" y="24" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#FFFFFF">go-ascii</text>
+        </svg>
+    </div>
+
+    <h1 class="editorial-title" style="font-size: 2.2rem; text-align: center; margin-bottom: 8px;">İlk Kurulum</h1>
+    <p class="editorial-subtitle" style="text-align: center; margin-bottom: 32px; font-size: 0.95rem;">Sunucuyu başlatmak için yönetici (süperadmin) kimlik bilgilerini oluşturun.</p>
+
+    {{if .Error}}
+    <div class="alert alert-error">
+        {{.Error}}
+    </div>
+    {{end}}
+
+    <div class="card">
+        <h2 class="card-title">Yönetici Bilgileri</h2>
+        <form action="/admin/register" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="username">Kullanıcı Adı</label>
+                <input class="form-control" type="text" id="username" name="username" required autocomplete="off" autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="password">Şifre</label>
+                <div class="password-wrapper">
+                    <input class="form-control" type="password" id="password" name="password" required>
+                    <button type="button" id="toggle-pwd-btn" class="password-toggle-btn" onclick="togglePassword('password', 'toggle-pwd-btn')">
+                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 28px;">
+                <label class="form-label" for="confirm_password">Şifreyi Onayla</label>
+                <div class="password-wrapper">
+                    <input class="form-control" type="password" id="confirm_password" name="confirm_password" required>
+                    <button type="button" id="toggle-conf-btn" class="password-toggle-btn" onclick="togglePassword('confirm_password', 'toggle-conf-btn')">
+                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" type="submit" style="width: 100%;">Sunucuyu Başlat</button>
+        </form>
+    </div>
+    
+    <p style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 24px; font-family: var(--font-mono);">
+        [ ilk hesaptan sonra kayıt kalıcı olarak kapatılacaktır ]
+    </p>
+</div>
+
+<script>
+    function togglePassword(inputId, btnId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        if (input.type === "password") {
+            input.type = "text";
+            btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+        } else {
+            input.type = "password";
+            btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+        }
+    }
+</script>
+{{template "footer" .}}

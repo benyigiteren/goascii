@@ -1,0 +1,230 @@
+{{template "header" .}}
+<div class="nav">
+    <a href="/admin/dashboard" class="nav-logo" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <!-- SVG Logo in Header -->
+        <svg viewBox="0 0 120 40" width="110" height="35" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="116" height="36" rx="6" fill="#111111" stroke="#EAEAEA" stroke-width="1.5" />
+            <path d="M12 14L18 20L12 26" stroke="#346538" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <line x1="22" y1="26" x2="30" y2="26" stroke="#346538" stroke-width="2.5" stroke-linecap="round" />
+            <text x="36" y="24" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#FFFFFF">go-ascii</text>
+        </svg>
+    </a>
+    <div class="nav-user">
+        <span>Giriş yapan: <strong>{{.Username}}</strong></span>
+        <a href="/admin/logout" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Çıkış Yap</a>
+    </div>
+</div>
+
+{{if .Error}}
+<div class="alert alert-error">
+    {{.Error}}
+</div>
+{{end}}
+
+{{if .Success}}
+<div class="alert alert-success">
+    {{.Success}}
+</div>
+{{end}}
+
+<!-- Metric Overview Cards -->
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="metric-label">Toplam Akış Yayını</div>
+        <div class="metric-value">{{.TotalRuns}}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Tekil İstemci (IP)</div>
+        <div class="metric-value">{{.UniqueIPs}}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Ort. Akış Bağlantısı</div>
+        <div class="metric-value">{{.AvgDuration}}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">İstemci Dağılımı</div>
+        <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">curl:</span>
+                <span class="badge badge-green" style="padding: 1px 6px;">{{.CurlCount}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">wget:</span>
+                <span class="badge badge-blue" style="padding: 1px 6px;">{{.WgetCount}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">tarayıcı:</span>
+                <span class="badge badge-yellow" style="padding: 1px 6px;">{{.BrowserCount}}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bento-grid">
+    <!-- Animations List Card -->
+    <div class="card col-8">
+        <h2 class="card-title" style="margin-bottom: 24px;">Aktif ASCII Akışları</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Yayın Adı</th>
+                        <th>Yol (Slug)</th>
+                        <th>Tür</th>
+                        <th>Yayın Sayısı</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Animations}}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">{{.Name}}</div>
+                            {{if eq .Type "custom"}}
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{.CreatedBy}} tarafından yüklendi</div>
+                            {{else if eq .Type "predefined"}}
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Sistem Hazır Şablonu</div>
+                            {{else}}
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Matematiksel Algoritma</div>
+                            {{end}}
+                        </td>
+                        <td>
+                            <code style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-primary);">/{{.Slug}}</code>
+                        </td>
+                        <td>
+                            {{if eq .Type "procedural"}}
+                            <span class="badge badge-blue">Algoritma</span>
+                            {{else if eq .Type "predefined"}}
+                            <span class="badge badge-yellow">Şablon</span>
+                            {{else}}
+                            <span class="badge badge-green">Yükleme</span>
+                            {{end}}
+                        </td>
+                        <td style="font-family: var(--font-mono); font-weight: 500;">
+                            {{.RunCount}}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <a href="/admin/preview/{{.Slug}}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Önizle</a>
+                                {{if eq .Type "custom"}}
+                                <form action="/admin/animations/delete" method="POST" onsubmit="return confirm('Bu özel animasyonu silmek istediğinize emin misiniz?');" style="margin: 0;">
+                                    <input type="hidden" name="slug" value="{{.Slug}}">
+                                    <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.75rem;">Sil</button>
+                                </form>
+                                {{end}}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr style="background-color: var(--canvas-bg);">
+                        <td colspan="5" style="padding: 8px 16px; border-bottom: 2px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">Terminal Komutu:</span>
+                                <div style="display: flex; align-items: center; gap: 8px; width: 80%;">
+                                    <input type="text" readonly value="curl -s {{$.Host}}/{{.Slug}}" 
+                                           class="form-control" 
+                                           style="font-family: var(--font-mono); font-size: 0.75rem; padding: 4px 8px; background-color: var(--surface-bg); cursor: text;" 
+                                           onclick="this.select(); document.execCommand('copy'); alert('Terminal komutu panoya kopyalandı!');">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Upload Form Card -->
+    <div class="card col-4">
+        <h2 class="card-title">GIF / MP4'ten ASCII'ye</h2>
+        <form action="/admin/animations" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label" for="name">Animasyon Görüntüleme Adı</label>
+                <input class="form-control" type="text" id="name" name="name" required placeholder="Örn: Anonymous Maske">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="slug">İstek Yol Adı (Slug)</label>
+                <input class="form-control" type="text" id="slug" name="slug" required placeholder="örn: anonymous-maske" style="text-transform: lowercase;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Sadece harf, sayı ve tire (-) kullanılabilir.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="width">Maksimum Karakter Genişliği</label>
+                <input class="form-control" type="number" id="width" name="width" value="80" min="20" max="160">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Varsayılan 80. Büyük değerler terminalde taşma yapabilir.</span>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                <input type="checkbox" id="crop_center" name="crop_center" style="cursor: pointer; width: 16px; height: 16px;">
+                <label for="crop_center" style="font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--text-secondary);">Merkezi Kırp (Kare Yap)</label>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label" for="gif_file">Animasyon Dosyası (GIF veya MP4)</label>
+                <input class="form-control" type="file" id="gif_file" name="gif_file" accept="image/gif,video/mp4" required style="padding: 6px 12px; background: transparent;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Maksimum 15MB. MP4 kullanımı sunucuda FFmpeg gerektirir.</span>
+            </div>
+
+            <button class="btn btn-primary" type="submit" style="width: 100%;">Dönüştür ve Kaydet</button>
+        </form>
+    </div>
+</div>
+
+<!-- Request Audit Log Card -->
+<div class="card col-12" style="margin-bottom: 0;">
+    <h2 class="card-title" style="margin-bottom: 24px;">Son İstek Kayıtları</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Zaman Damgası</th>
+                    <th>Akış Yolu</th>
+                    <th>İstemci IP</th>
+                    <th>Cihaz Türü</th>
+                    <th>Bağlantı Süresi</th>
+                    <th>İstemci Kimliği (User-Agent)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{if .Logs}}
+                    {{range .Logs}}
+                    <tr>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem;">
+                            {{.Timestamp.Format "2006-01-02 15:04:05"}}
+                        </td>
+                        <td>
+                            <span style="font-family: var(--font-mono); font-weight: 500;">/{{.AnimationSlug}}</span>
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem;">
+                            {{.ClientIP}}
+                        </td>
+                        <td>
+                            {{if eq .ClientType "curl"}}
+                            <span class="badge badge-green">{{.ClientType}}</span>
+                            {{else if eq .ClientType "wget"}}
+                            <span class="badge badge-blue">{{.ClientType}}</span>
+                            {{else}}
+                            <span class="badge badge-yellow">{{.ClientType}}</span>
+                            {{end}}
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem;">
+                            {{printf "%.3fs" .DurationSeconds}}
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{.UserAgent}}">
+                            {{.UserAgent}}
+                        </td>
+                    </tr>
+                    {{end}}
+                {{else}}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 24px;">
+                        Henüz hiç akış sunulmadı. Yukarıdaki komutları terminalinizden çalıştırarak ilk testi yapabilirsiniz!
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{template "footer" .}}

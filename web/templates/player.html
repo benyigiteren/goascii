@@ -1,0 +1,159 @@
+{{template "header" .}}
+<div class="nav">
+    <a href="/admin/dashboard" class="nav-logo" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <svg viewBox="0 0 120 40" width="110" height="35" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="116" height="36" rx="6" fill="#111111" stroke="#EAEAEA" stroke-width="1.5" />
+            <path d="M12 14L18 20L12 26" stroke="#346538" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <line x1="22" y1="26" x2="30" y2="26" stroke="#346538" stroke-width="2.5" stroke-linecap="round" />
+            <text x="36" y="24" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#FFFFFF">go-ascii</text>
+        </svg>
+    </a>
+    <div class="nav-user">
+        <a href="/admin/dashboard" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">&larr; Kontrol Paneline Dön</a>
+    </div>
+</div>
+
+<h1 class="editorial-title" style="font-size: 2.2rem; margin-bottom: 8px;">{{.Name}}</h1>
+<p class="editorial-subtitle" style="margin-bottom: 24px;">Tarayıcı içi terminal akış önizlemesi.</p>
+
+<div class="bento-grid">
+    <!-- Faux macOS Terminal Chrome -->
+    <div class="card col-8 terminal-window" style="padding: 0; background-color: #151515;">
+        <div class="terminal-header">
+            <div class="terminal-dots">
+                <div class="terminal-dot" style="background-color: #ff5f56;"></div>
+                <div class="terminal-dot" style="background-color: #ffbd2e;"></div>
+                <div class="terminal-dot" style="background-color: #27c93f;"></div>
+            </div>
+            <div class="terminal-title">curl -s http://go-ascii.local/{{.Slug}}</div>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <pre class="terminal-screen" id="ascii-screen" style="font-size: 10px; color: #f0f0f0;">Kareler yükleniyor...</pre>
+        </div>
+    </div>
+
+    <!-- Playback Control Card -->
+    <div class="card col-4">
+        <h2 class="card-title">Oynatma Kontrolleri</h2>
+        
+        <div class="form-group" style="margin-top: 16px;">
+            <span class="form-label">Durum</span>
+            <div style="font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600;">
+                Durum: <span id="playback-state" class="badge badge-green">Oynatılıyor</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Metrikler</span>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+                <div>Kare: <span id="frame-counter" style="font-family: var(--font-mono); font-weight: 600; color: var(--text-primary);">0 / 0</span></div>
+                <div>Gecikme: <span id="delay-val" style="font-family: var(--font-mono); font-weight: 600; color: var(--text-primary);">{{.FrameDelayMs}}ms</span></div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="font-size-slider">Yazı Tipi Boyutu (<span id="font-size-label">10px</span>)</label>
+            <input type="range" id="font-size-slider" class="form-control" style="padding: 0; background: transparent; cursor: pointer;" min="6" max="18" value="10">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 24px;">
+            <button id="btn-play-pause" class="btn btn-primary" style="width: 100%;">Oynatmayı Duraklat</button>
+            <button id="btn-restart" class="btn btn-secondary" style="width: 100%;">Döngüyü Sıfırla</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const slug = "{{.Slug}}";
+    const screen = document.getElementById("ascii-screen");
+    const playPauseBtn = document.getElementById("btn-play-pause");
+    const restartBtn = document.getElementById("btn-restart");
+    const playbackStateBadge = document.getElementById("playback-state");
+    const frameCounter = document.getElementById("frame-counter");
+    const delayValSpan = document.getElementById("delay-val");
+    const fontSizeSlider = document.getElementById("font-size-slider");
+    const fontSizeLabel = document.getElementById("font-size-label");
+
+    let animData = null;
+    let currentFrameIdx = 0;
+    let isPlaying = true;
+    let timeoutId = null;
+
+    // Load data
+    fetch(`/api/animation/${slug}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Akış verileri sunucudan yüklenemedi");
+            }
+            return response.json();
+        })
+        .then(data => {
+            animData = data;
+            frameCounter.textContent = `0 / ${animData.frames.length}`;
+            play();
+        })
+        .catch(err => {
+            screen.textContent = `Hata: ${err.message}`;
+            screen.style.color = "#ff5f56";
+        });
+
+    function play() {
+        if (!animData || !isPlaying) return;
+
+        // Render frame
+        screen.textContent = animData.frames[currentFrameIdx];
+        
+        // Update counters
+        frameCounter.textContent = `${currentFrameIdx + 1} / ${animData.frames.length}`;
+        
+        // Handle delay
+        let delay = animData.frame_delay_ms;
+        if (animData.delays && animData.delays.length > currentFrameIdx) {
+            delay = animData.delays[currentFrameIdx];
+        }
+        delayValSpan.textContent = `${delay}ms`;
+
+        // Increment frame
+        currentFrameIdx = (currentFrameIdx + 1) % animData.frames.length;
+
+        // Schedule next frame
+        timeoutId = setTimeout(play, delay);
+    }
+
+    // Controls
+    playPauseBtn.addEventListener("click", () => {
+        if (isPlaying) {
+            // Pause
+            isPlaying = false;
+            clearTimeout(timeoutId);
+            playPauseBtn.textContent = "Oynatmaya Devam Et";
+            playbackStateBadge.textContent = "Duraklatıldı";
+            playbackStateBadge.className = "badge badge-yellow";
+        } else {
+            // Resume
+            isPlaying = true;
+            playPauseBtn.textContent = "Oynatmayı Duraklat";
+            playbackStateBadge.textContent = "Oynatılıyor";
+            playbackStateBadge.className = "badge badge-green";
+            play();
+        }
+    });
+
+    restartBtn.addEventListener("click", () => {
+        clearTimeout(timeoutId);
+        currentFrameIdx = 0;
+        isPlaying = true;
+        playPauseBtn.textContent = "Oynatmayı Duraklat";
+        playbackStateBadge.textContent = "Oynatılıyor";
+        playbackStateBadge.className = "badge badge-green";
+        play();
+    });
+
+    // Font size sizing
+    fontSizeSlider.addEventListener("input", (e) => {
+        const size = e.target.value;
+        screen.style.fontSize = `${size}px`;
+        fontSizeLabel.textContent = `${size}px`;
+    });
+</script>
+{{template "footer" .}}
