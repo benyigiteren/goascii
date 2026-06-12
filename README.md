@@ -20,10 +20,10 @@ go build -o go-ascii.exe .
 
 ```bash
 # Tarayıcıdan JSON yardım listesi
-curl http://localhost:8080/
+curl https://localhost:8080/
 
 # Bir animasyonu canlı izle (Ctrl+C ile çık)
-curl -N http://localhost:8080/nyancat
+curl -N https://localhost:8080/nyancat
 ```
 
 ### Sorgu parametreleri
@@ -33,7 +33,7 @@ curl -N http://localhost:8080/nyancat
 - `color=false` — Renkleri kapatır
 
 ```bash
-curl -N "http://localhost:8080/matrix?w=120&h=40&color=false"
+curl -N "https://localhost:8080/matrix?w=120&h=40&color=false"
 ```
 
 ## Animasyonlar
@@ -64,7 +64,7 @@ curl -N "http://localhost:8080/matrix?w=120&h=40&color=false"
 
 ## Yönetim Paneli
 
-Tarayıcıdan `http://localhost:8080/` adresine girdiğinizde otomatik
+Tarayıcıdan `https://localhost:8080/` adresine girdiğinizde otomatik
 olarak yönetim paneline yönlendirilirsiniz. Buradan:
 
 - Kayıt olup giriş yapabilirsiniz

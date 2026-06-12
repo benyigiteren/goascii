@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type AdminServer struct {
@@ -168,7 +169,7 @@ func (s *AdminServer) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	// Build host address for display
 	host := r.Host
 	if !strings.Contains(host, "://") {
-		proto := "http"
+		proto := "https"
 		if r.TLS != nil {
 			proto = "https"
 		}
@@ -196,6 +197,79 @@ func (s *AdminServer) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = s.Templates.ExecuteTemplate(w, "dashboard.html", data)
+}
+
+// HandleAdminInfo returns a JSON snapshot of the current admin user, role,
+// and the full animation list. Useful for the first registered user to
+// inspect what is available right after signing up.
+func (s *AdminServer) HandleAdminInfo(w http.ResponseWriter, r *http.Request) {
+	username, _ := GetSessionManager().GetUsername(r)
+
+	role := "user"
+	createdAt := time.Time{}
+	if u, ok := s.DB.GetUser(username); ok {
+		role = u.Role
+		createdAt = u.CreatedAt
+	}
+
+	anims := s.DB.GetAnimations()
+	animList := make([]map[string]interface{}, 0, len(anims))
+	for _, a := range anims {
+		animList = append(animList, map[string]interface{}{
+			"slug":          a.Slug,
+			"name":          a.Name,
+			"type":          a.Type,
+			"frame_delay_ms": a.FrameDelayMs,
+			"frames_count":  a.FramesCount,
+			"run_count":     a.RunCount,
+			"created_by":    a.CreatedBy,
+			"created_at":    a.CreatedAt,
+			"url":           "https://" + r.Host + "/" + a.Slug,
+		})
+	}
+
+	totalUsers := s.DB.GetUsersCount()
+	totalRuns := s.DB.GetTotalRunCount()
+	uniqueIPs := s.DB.GetUniqueIPsCount()
+	clientCounts := s.DB.GetClientTypeCounts()
+
+	proto := "https"
+	if r.TLS == nil {
+		proto = "http"
+	}
+
+	payload := map[string]interface{}{
+		"current_user": map[string]interface{}{
+			"username":   username,
+			"role":       role,
+			"created_at": createdAt,
+		},
+		"server": map[string]interface{}{
+			"host":      r.Host,
+			"scheme":    proto,
+			"base_url":  proto + "://" + r.Host,
+		},
+		"stats": map[string]interface{}{
+			"total_users":   totalUsers,
+			"total_runs":    totalRuns,
+			"unique_ips":    uniqueIPs,
+			"client_types":  clientCounts,
+		},
+		"animations": animList,
+		"endpoints": map[string]string{
+			"help":           proto + "://" + r.Host + "/help",
+			"register":       proto + "://" + r.Host + "/admin/register",
+			"login":          proto + "://" + r.Host + "/admin/login",
+			"dashboard":      proto + "://" + r.Host + "/admin/dashboard",
+			"admin_info":     proto + "://" + r.Host + "/api/admin/info",
+			"api_dashboard":  proto + "://" + r.Host + "/api/dashboard",
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	_ = enc.Encode(payload)
 }
 
 // HandleCreateAnimation uploads and converts GIF or MP4

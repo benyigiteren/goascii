@@ -171,6 +171,35 @@
     </div>
 </div>
 
+<!-- JSON Snapshot Card (superadmin info) -->
+<div class="card col-12" style="margin-top: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <h2 class="card-title" style="margin: 0;">JSON Oturum Özeti</h2>
+        <a href="/api/admin/info" target="_blank" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">/api/admin/info'yu Aç</a>
+    </div>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">
+        Aktif oturum, rol ve canlı yayın listesi. <code>/api/admin/info</code> ve <code>/api/dashboard</code> adresleri de aynı JSON'u döndürür.
+    </p>
+    <pre id="admin-info" style="background: #0b0b0b; color: #b6f0c4; padding: 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.8rem; max-height: 360px; overflow: auto; border: 1px solid var(--border-color);">Yükleniyor...</pre>
+</div>
+<script>
+    (function() {
+        var el = document.getElementById('admin-info');
+        if (!el) return;
+        fetch('/api/admin/info', { credentials: 'same-origin' })
+            .then(function(r) { return r.text(); })
+            .then(function(t) {
+                try {
+                    var obj = JSON.parse(t);
+                    el.textContent = JSON.stringify(obj, null, 2);
+                } catch (e) {
+                    el.textContent = t;
+                }
+            })
+            .catch(function(e) { el.textContent = 'Hata: ' + e; });
+    })();
+</script>
+
 <!-- Request Audit Log Card -->
 <div class="card col-12" style="margin-bottom: 0;">
     <h2 class="card-title" style="margin-bottom: 24px;">Son İstek Kayıtları</h2>

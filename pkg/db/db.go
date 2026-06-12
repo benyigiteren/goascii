@@ -13,6 +13,7 @@ type User struct {
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"password_hash"`
 	Salt         string    `json:"salt"`
+	Role         string    `json:"role"` // "superadmin" veya "user"
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -458,7 +459,7 @@ func (db *DB) GetUsersCount() int {
 	return len(db.state.Users)
 }
 
-// CreateUser registers a new user
+// CreateUser registers a new user. The very first user is promoted to superadmin.
 func (db *DB) CreateUser(username, passwordHash, salt string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -470,10 +471,16 @@ func (db *DB) CreateUser(username, passwordHash, salt string) error {
 		}
 	}
 
+	role := "user"
+	if len(db.state.Users) == 0 {
+		role = "superadmin"
+	}
+
 	db.state.Users = append(db.state.Users, User{
 		Username:     username,
 		PasswordHash: passwordHash,
 		Salt:         salt,
+		Role:         role,
 		CreatedAt:    time.Now(),
 	})
 

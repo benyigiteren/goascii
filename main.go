@@ -63,7 +63,11 @@ func main() {
 	mux.HandleFunc("POST /admin/login", adminServer.HandleLogin)
 	mux.HandleFunc("GET /admin/logout", adminServer.HandleLogout)
 	mux.HandleFunc("GET /admin/dashboard", adminServer.AuthMiddleware(adminServer.HandleDashboard))
-	
+
+	// JSON info endpoint (superadmin + animasyonlar)
+	mux.HandleFunc("GET /api/admin/info", adminServer.AuthMiddleware(adminServer.HandleAdminInfo))
+	mux.HandleFunc("GET /api/dashboard", adminServer.AuthMiddleware(adminServer.HandleAdminInfo))
+
 	// Animation actions
 	mux.HandleFunc("POST /admin/animations", adminServer.AuthMiddleware(adminServer.HandleCreateAnimation))
 	mux.HandleFunc("POST /admin/animations/delete", adminServer.AuthMiddleware(adminServer.HandleDeleteAnimation))
@@ -87,7 +91,7 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on http://localhost:%s", port)
+	log.Printf("Server starting on https://localhost:%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
@@ -131,20 +135,21 @@ func makeHelpHandler(database *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+		scheme := schemeFor(r)
 		anims := database.GetAnimations()
 		animList := make([]map[string]string, 0, len(anims))
 		for _, a := range anims {
 			animList = append(animList, map[string]string{
 				"slug": a.Slug,
 				"name": a.Name,
-				"url":  "http://" + r.Host + "/" + a.Slug,
+				"url":  scheme + "://" + r.Host + "/" + a.Slug,
 			})
 		}
 
 		helpData := map[string]interface{}{
 			"servis":       "go-ascii",
 			"aciklama":     "Terminal uzerinden ASCII animasyon akis servisi.",
-			"kullanim":     "curl -s http://" + r.Host + "/<slug>",
+			"kullanim":     "curl -s " + scheme + "://" + r.Host + "/<slug>",
 			"animasyonlar": animList,
 			"parametreler": map[string]string{
 				"w":     "Karakter genisligi (Ornek: ?w=100)",
@@ -155,6 +160,16 @@ func makeHelpHandler(database *db.DB) http.HandlerFunc {
 
 		_ = json.NewEncoder(w).Encode(helpData)
 	}
+}
+
+func schemeFor(r *http.Request) string {
+	if r.TLS != nil {
+		return "https"
+	}
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		return proto
+	}
+	return "https"
 }
 
 // makeRootHandler handles requests to "/"
@@ -176,20 +191,21 @@ func makeRootHandler(database *db.DB) http.HandlerFunc {
 		startTime := time.Now()
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+		scheme := schemeFor(r)
 		anims := database.GetAnimations()
 		animList := make([]map[string]string, 0, len(anims))
 		for _, a := range anims {
 			animList = append(animList, map[string]string{
 				"slug": a.Slug,
 				"name": a.Name,
-				"url":  "http://" + r.Host + "/" + a.Slug,
+				"url":  scheme + "://" + r.Host + "/" + a.Slug,
 			})
 		}
 
 		helpData := map[string]interface{}{
 			"servis":       "go-ascii",
 			"aciklama":     "Terminal uzerinden ASCII animasyon akis servisi.",
-			"kullanim":     "curl -s http://" + r.Host + "/<slug>",
+			"kullanim":     "curl -s " + scheme + "://" + r.Host + "/<slug>",
 			"animasyonlar": animList,
 			"parametreler": map[string]string{
 				"w":     "Karakter genisligi (Ornek: ?w=100)",
