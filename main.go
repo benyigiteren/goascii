@@ -86,14 +86,55 @@ func main() {
 	// Root endpoint
 	mux.HandleFunc("GET /", makeRootHandler(database))
 
-	// Get port from environment or default to 8080
+	// Primary listen address (default 8080, override with PORT or PORT_HTTP)
 	port := os.Getenv("PORT")
+	if port == "" {
+		port = os.Getenv("PORT_HTTP")
+	}
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on http://localhost:%s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	// Primary listen address (HTTP)
+	primary := ":" + port
+	log.Printf("Server starting on http://localhost%s", primary)
+
+	// Optional secondary HTTP listener (e.g. expose on :80 in addition to
+	// the container's :8080). Both HTTP listeners do NOT redirect to HTTPS;
+	// the operator decides whether to run a TLS terminator in front.
+	if extra := os.Getenv("HTTP_PORT_2"); extra != "" {
+		go func() {
+			addr := ":" + extra
+			log.Printf("Also listening on %s", addr)
+			if err := http.ListenAndServe(addr, mux); err != nil {
+				log.Printf("Secondary HTTP listener on %s failed: %v", addr, err)
+			}
+		}()
+	}
+
+	// Optional HTTPS listener. Enable by setting:
+	//   TLS_CERT_FILE=/path/to/fullchain.pem
+	//   TLS_KEY_FILE=/path/to/privkey.pem
+	//   HTTPS_PORT=443
+	// When enabled, BOTH http and https keep working — we never 30x redirect
+	// a client from http to https, so plain curl http://... always succeeds.
+	certFile := os.Getenv("TLS_CERT_FILE")
+	keyFile := os.Getenv("TLS_KEY_FILE")
+	httpsPort := os.Getenv("HTTPS_PORT")
+	if certFile != "" && keyFile != "" {
+		if httpsPort == "" {
+			httpsPort = "443"
+		}
+		go func() {
+			addr := ":" + httpsPort
+			log.Printf("TLS enabled, also listening on https://localhost%s", addr)
+			if err := http.ListenAndServeTLS(addr, certFile, keyFile, mux); err != nil {
+				log.Printf("TLS listener on %s failed: %v", addr, err)
+			}
+		}()
+	}
+
+	if err := http.ListenAndServe(primary, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

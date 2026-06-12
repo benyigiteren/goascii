@@ -1,0 +1,22 @@
+# Build artifacts
+go-ascii.exe
+go-ascii
+*.test
+*.out
+push.err
+push.log
+push2.log
+earth.txt
+*.txt
+
+# Runtime data — never bake into image
+data/
+.agents/
+
+# Git
+.git/
+.gitignore
+
+# Editor
+.vscode/
+.idea/

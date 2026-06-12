@@ -1,0 +1,25 @@
+# Caddyfile for go-ascii
+# - Serves BOTH http:// and https:// on the same domain
+# - Does NOT 30x-redirect http -> https
+# - Let's Encrypt certificates are obtained automatically by Caddy
+# - Streams are passed through with chunked encoding
+
+{
+    email admin@yigiteren.org
+}
+
+# Plain HTTP: accept and proxy to the Go app, no redirect.
+http://ascii.yigiteren.org {
+    reverse_proxy go-ascii:8080 {
+        header_up X-Forwarded-Proto "http"
+        flush_interval -1
+    }
+}
+
+# HTTPS: same proxy, with auto-TLS via Let's Encrypt.
+https://ascii.yigiteren.org {
+    reverse_proxy go-ascii:8080 {
+        header_up X-Forwarded-Proto "https"
+        flush_interval -1
+    }
+}

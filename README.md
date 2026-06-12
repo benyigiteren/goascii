@@ -88,3 +88,61 @@ web/static/            — Statik dosyalar (embed)
 
 Tüm HTTP chunked stream üzerinden akar, frame başına ANSI kaçış
 kodları ile terminal temizleme yapılır.
+
+## Docker ile Çalıştırma
+
+Repository'de multi-stage `Dockerfile`, `docker-compose.yml` ve
+opsiyonel `Caddyfile` bulunur. Caddy, Let's Encrypt sertifikasını
+otomatik alır **ve** hem `http://` hem `https://` üzerinden aynı anda
+serve eder; `http -> https` yönlendirmesi yapmaz.
+
+### Yalnızca Go (Dokploy / Traefik ile)
+
+```bash
+docker build -t go-ascii .
+docker run -d --name go-ascii -p 8080:8080 -v goascii_data:/app/data go-ascii
+```
+
+Dokploy üzerinde `docker-compose.yml` veya Dockerfile olarak deploy
+edersen, Traefik otomatik `https://ascii.yigiteren.org` üzerinden
+yayınlar. `http://` üzerinden de aynı içerik gelir.
+
+### Go + Caddy (Traefik'siz, otomatik TLS)
+
+`docker-compose.yml` içindeki `caddy` servisinin başındaki yorum
+satırlarını kaldır ve domain'i değiştir:
+
+```yaml
+caddy:
+  image: caddy:2-alpine
+  ports: ["80:80", "443:443"]
+  volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    - caddy_data:/data
+    - caddy_config:/config
+```
+
+Sonra:
+
+```bash
+docker compose up -d
+```
+
+Bu kurulumda:
+- `curl https://ascii.yigiteren.org/earth` çalışır (TLS, Let's Encrypt)
+- `curl http://ascii.yigiteren.org/earth` da çalışır (TLS yok, redirect yok)
+- `Moved Permanently` almazsın
+
+### Ortam Değişkenleri
+
+| Değişken         | Varsayılan | Açıklama                                               |
+|------------------|------------|--------------------------------------------------------|
+| `PORT`           | `8080`     | Ana HTTP portu                                         |
+| `HTTP_PORT_2`    | boş        | İkincil HTTP portu (örn. `80` host'a bağlamak için)   |
+| `HTTPS_PORT`     | boş        | TLS portu (örn. `443`), sadece sertifika varsa dinler  |
+| `TLS_CERT_FILE`  | boş        | `fullchain.pem` yolu                                   |
+| `TLS_KEY_FILE`   | boş        | `privkey.pem` yolu                                     |
+
+Sunucu **asla** `Location` header'ı ile yönlendirme yapmaz. Caddy
+veya başka reverse proxy ile zorunlu https istersen onlar ekler;
+istemezsen hiç eklenmez.

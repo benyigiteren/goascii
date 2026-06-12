@@ -1,0 +1,45 @@
+services:
+  go-ascii:
+    build: .
+    image: go-ascii:latest
+    container_name: go-ascii
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # HTTP — works as-is, no forced redirect
+    environment:
+      - PORT=8080
+      # Optional: also bind on 80 (host) for direct external access without
+      # Dokploy's Traefik in the way. Uncomment if you want plain http://.
+      # - HTTP_PORT_2=80
+      # Optional: enable HTTPS with a manually-provisioned cert. Leave empty
+      # to serve only HTTP. We never redirect http -> https, so curl works
+      # in both cases.
+      - HTTPS_PORT=
+      - TLS_CERT_FILE=
+      - TLS_KEY_FILE=
+      - TZ=UTC
+    volumes:
+      - goascii_data:/app/data
+
+  # Optional: Caddy in front of go-ascii if you want automatic HTTPS via
+  # Let's Encrypt WITHOUT forcing clients to use https. Uncomment to use.
+  #
+  # caddy:
+  #   image: caddy:2-alpine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   environment:
+  #     - CADDY_INGRESS_NETWORKS=dokploy-network
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     - go-ascii
+
+volumes:
+  goascii_data:
+  # caddy_data:
+  # caddy_config:
