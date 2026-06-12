@@ -92,7 +92,7 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on https://localhost:%s", port)
+	log.Printf("Server starting on http://localhost:%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
@@ -324,30 +324,27 @@ func makeRootHandler(database *db.DB) http.HandlerFunc {
 func makeStreamHandler(database *db.DB, dbDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := r.PathValue("name")
-		
+
 		// Verify animation exists
 		animMeta, ok := database.GetAnimation(name)
 		if !ok {
-			// Unregistered route fallback
 			clientType, isTerminal := detectClient(r)
-			if isTerminal {
+			if isTerminal || strings.Contains(r.Header.Get("Accept"), "application/json") {
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusNotFound)
 				_, _ = w.Write([]byte("Bilinmeyen adres. Mevcut adresleri gormek icin /help adresini ziyaret edin.\n"))
-				
-				// Log the unknown query
 				_ = database.AddLog("invalid:"+name, getClientIP(r), r.Header.Get("User-Agent"), clientType, 0)
 			} else {
-				// Redirect browser to help endpoint
-				http.Redirect(w, r, "/help", http.StatusSeeOther)
+				// Browser: redirect yerine inline HTML yardim sayfasi goster
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Yayin bulunamadi</title>
+<style>body{background:#0b0b0b;color:#d4d4d4;font-family:monospace;padding:32px;line-height:1.5}a{color:#9ed68a}</style>
+</head><body><h1 style="color:#ff7b7b">404 - Yayin bulunamadi</h1>
+<p>"/` + name + `" bilinen bir yayin degil. <a href="/help">Mevcut yayinlar icin /help</a> adresini ziyaret edin.</p>
+</body></html>`))
+				_ = database.AddLog("invalid:"+name, getClientIP(r), r.Header.Get("User-Agent"), clientType, 0)
 			}
-			return
-		}
-
-		// Browser redirect to preview player
-		clientType, isTerminal := detectClient(r)
-		if !isTerminal {
-			http.Redirect(w, r, "/admin/preview/"+name, http.StatusSeeOther)
 			return
 		}
 
@@ -406,6 +403,7 @@ func makeStreamHandler(database *db.DB, dbDir string) http.HandlerFunc {
 
 		startTime := time.Now()
 		ua := r.Header.Get("User-Agent")
+		clientType, _ := detectClient(r)
 		tick := 0
 
 		// Streaming Loop
