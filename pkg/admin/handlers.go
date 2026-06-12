@@ -459,6 +459,54 @@ func (s *AdminServer) HandleAPIAnimationGet(w http.ResponseWriter, r *http.Reque
 				frame = ascii.GetNyanCatFrame(tick, width, height, false)
 			case "crewmate":
 				frame = ascii.GetCrewmateFrame(tick, width, height, false)
+			case "kitty":
+				frame = ascii.GetKittyFrame(tick, width, height, false)
+			case "parrot":
+				frame = ascii.GetParrotFrame(tick, width, height, false)
+			case "coin":
+				frame = ascii.GetCoinLiveFrame(tick, width, height, false)
+			case "forrest":
+				frame = ascii.GetForrestFrame(tick, width, height, false)
+			case "bomb":
+				frame = ascii.GetBombFrame(tick, width, height, false)
+			case "nyan":
+				frame = ascii.GetNyanLiveFrame(tick, width, height, false)
+			case "purdue":
+				frame = ascii.GetPurdueFrame(tick, width, height, false)
+			case "india":
+				frame = ascii.GetIndiaFrame(tick, width, height, false)
+			case "knot":
+				frame = ascii.GetKnotFrame(tick, width, height, false)
+			case "maxwell":
+				frame = ascii.GetMaxwellFrame(tick, width, height, false)
+			case "astrand":
+				frame = ascii.GetAstrendFrame(tick, width, height, false)
+			case "brittany":
+				frame = ascii.GetBrittanyFrame(tick, width, height, false)
+			case "batman":
+				frame = ascii.GetBatmanFrame(tick, width, height, false)
+			case "batman-running":
+				frame = ascii.GetBatmanRunningFrame(tick, width, height, false)
+			case "bnr":
+				frame = ascii.GetBNRFrame(tick, width, height, false)
+			case "spidyswing":
+				frame = ascii.GetSpidyswingFrame(tick, width, height, false)
+			case "rick":
+				frame = ascii.GetRickLiveFrame(tick, width, height, false)
+			case "can-you-hear-me":
+				frame = ascii.GetCanYouHearMeFrame(tick, width, height, false)
+			case "earth-live":
+				frame = ascii.GetEarthLiveFrame(tick, width, height, false)
+			case "nyan-live":
+				frame = ascii.GetNyanLiveFrame(tick, width, height, false)
+			case "donut-live":
+				frame = ascii.GetDonutLiveFrame(tick, width, height, false)
+			case "hes":
+				frame = ascii.GetHESFrame(tick, width, height, false)
+			case "torus-knot":
+				frame = ascii.GetKnotFrame(tick, width, height, false)
+			case "as":
+				frame = ascii.GetAstrendFrame(tick, width, height, false)
 			case "hacker1":
 				frame = ascii.GetHacker1Frame(tick, width, height, false)
 			case "hacker2":

@@ -479,6 +479,54 @@ func makeStreamHandler(database *db.DB, dbDir string) http.HandlerFunc {
 					frameContent = ascii.GetNyanCatFrame(tick, width, height, useColor)
 				case "crewmate":
 					frameContent = ascii.GetCrewmateFrame(tick, width, height, useColor)
+				case "kitty":
+					frameContent = ascii.GetKittyFrame(tick, width, height, useColor)
+				case "parrot":
+					frameContent = ascii.GetParrotFrame(tick, width, height, useColor)
+				case "coin":
+					frameContent = ascii.GetCoinLiveFrame(tick, width, height, useColor)
+				case "forrest":
+					frameContent = ascii.GetForrestFrame(tick, width, height, useColor)
+				case "bomb":
+					frameContent = ascii.GetBombFrame(tick, width, height, useColor)
+				case "nyan":
+					frameContent = ascii.GetNyanLiveFrame(tick, width, height, useColor)
+				case "purdue":
+					frameContent = ascii.GetPurdueFrame(tick, width, height, useColor)
+				case "india":
+					frameContent = ascii.GetIndiaFrame(tick, width, height, useColor)
+				case "knot":
+					frameContent = ascii.GetKnotFrame(tick, width, height, useColor)
+				case "maxwell":
+					frameContent = ascii.GetMaxwellFrame(tick, width, height, useColor)
+				case "astrand":
+					frameContent = ascii.GetAstrendFrame(tick, width, height, useColor)
+				case "brittany":
+					frameContent = ascii.GetBrittanyFrame(tick, width, height, useColor)
+				case "batman":
+					frameContent = ascii.GetBatmanFrame(tick, width, height, useColor)
+				case "batman-running":
+					frameContent = ascii.GetBatmanRunningFrame(tick, width, height, useColor)
+				case "bnr":
+					frameContent = ascii.GetBNRFrame(tick, width, height, useColor)
+				case "spidyswing":
+					frameContent = ascii.GetSpidyswingFrame(tick, width, height, useColor)
+				case "rick":
+					frameContent = ascii.GetRickLiveFrame(tick, width, height, useColor)
+				case "can-you-hear-me":
+					frameContent = ascii.GetCanYouHearMeFrame(tick, width, height, useColor)
+				case "earth-live":
+					frameContent = ascii.GetEarthLiveFrame(tick, width, height, useColor)
+				case "nyan-live":
+					frameContent = ascii.GetNyanLiveFrame(tick, width, height, useColor)
+				case "donut-live":
+					frameContent = ascii.GetDonutLiveFrame(tick, width, height, useColor)
+				case "hes":
+					frameContent = ascii.GetHESFrame(tick, width, height, useColor)
+				case "torus-knot":
+					frameContent = ascii.GetKnotFrame(tick, width, height, useColor)
+				case "as":
+					frameContent = ascii.GetAstrendFrame(tick, width, height, useColor)
 				case "hacker1":
 					frameContent = ascii.GetHacker1Frame(tick, width, height, useColor)
 				case "hacker2":
