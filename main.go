@@ -76,8 +76,9 @@ func main() {
 	mux.HandleFunc("GET /admin/preview/{name}", adminServer.AuthMiddleware(adminServer.HandlePreview))
 	mux.HandleFunc("GET /api/animation/{name}", adminServer.HandleAPIAnimationGet)
 
-	// Help Endpoint (/help)
+	// Help Endpoint (/help and /api/help)
 	mux.HandleFunc("GET /help", makeHelpHandler(database))
+	mux.HandleFunc("GET /api/help", makeHelpHandler(database))
 
 	// ASCII Streamer / Client Handler
 	mux.HandleFunc("GET /{name}", makeStreamHandler(database, dbDir))
@@ -133,8 +134,6 @@ func getClientIP(r *http.Request) string {
 // makeHelpHandler returns JSON detailing available animations
 func makeHelpHandler(database *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 		scheme := schemeFor(r)
 		anims := database.GetAnimations()
 		animList := make([]map[string]string, 0, len(anims))
@@ -158,7 +157,17 @@ func makeHelpHandler(database *db.DB) http.HandlerFunc {
 			},
 		}
 
-		_ = json.NewEncoder(w).Encode(helpData)
+		_, isTerminal := detectClient(r)
+		if isTerminal || strings.Contains(r.Header.Get("Accept"), "application/json") {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			enc := json.NewEncoder(w)
+			enc.SetIndent("", "  ")
+			_ = enc.Encode(helpData)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(renderLandingHTML(helpData, scheme, r.Host)))
 	}
 }
 
@@ -169,7 +178,85 @@ func schemeFor(r *http.Request) string {
 	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
 		return proto
 	}
-	return "https"
+	if r.Header.Get("X-Forwarded-Ssl") == "on" {
+		return "https"
+	}
+	// Default to http so plain http://ascii.yigiteren.org works
+	// without being redirected to https.
+	return "http"
+}
+
+func renderLandingHTML(data map[string]interface{}, scheme, host string) string {
+	var sb strings.Builder
+	sb.WriteString(`<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>go-ascii &mdash; ASCII Animasyon Servisi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{background:#0b0b0b;color:#d4d4d4;font-family:'JetBrains Mono',ui-monospace,monospace;margin:0;padding:32px;line-height:1.5}
+h1{color:#9ed68a;margin:0 0 8px 0;font-size:1.6rem}
+.sub{color:#888;margin-bottom:24px}
+a{color:#9ed68a;text-decoration:none}
+a:hover{text-decoration:underline}
+pre{background:#161616;border:1px solid #262626;padding:16px;border-radius:6px;overflow:auto;font-size:0.85rem;color:#b6f0c4}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:0.85rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #222}
+th{color:#888;font-weight:600}
+tr:hover{background:#141414}
+code{background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#ffd28b}
+.btn{display:inline-block;padding:6px 12px;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#9ed68a;font-size:0.8rem}
+.btn:hover{background:#222}
+</style>
+</head>
+<body>
+<h1>go-ascii</h1>
+<div class="sub">`)
+	sb.WriteString(fmt.Sprint(data["aciklama"]))
+	sb.WriteString(`</div>
+
+<h2>Nasil kullanilir</h2>
+<pre>curl -s `)
+	sb.WriteString(scheme)
+	sb.WriteString("://")
+	sb.WriteString(host)
+	sb.WriteString(`/&lt;slug&gt;</pre>
+
+<h2>Mevcut animasyonlar</h2>
+<table>
+<thead><tr><th>Yayin</th><th>Slug</th><th>URL</th></tr></thead>
+<tbody>`)
+
+	if list, ok := data["animasyonlar"].([]map[string]string); ok {
+		for _, a := range list {
+			sb.WriteString("<tr><td>")
+			sb.WriteString(a["name"])
+			sb.WriteString("</td><td><code>/")
+			sb.WriteString(a["slug"])
+			sb.WriteString("</code></td><td><a href=\"")
+			sb.WriteString(a["url"])
+			sb.WriteString("\">")
+			sb.WriteString(a["url"])
+			sb.WriteString("</a></td></tr>")
+		}
+	}
+
+	sb.WriteString(`</tbody></table>
+
+<h2>Sorgu parametreleri</h2>
+<ul>
+<li><code>?w=100</code> &mdash; Karakter genisligi (varsayilan 80)</li>
+<li><code>?h=30</code> &mdash; Karakter yuksekligi (varsayilan 24)</li>
+<li><code>?color=false</code> &mdash; Renkleri kapatir</li>
+</ul>
+
+<p style="margin-top:32px;"><a class="btn" href="/api/help">JSON yardim (Accept: application/json)</a> &nbsp; <a class="btn" href="/admin/dashboard">Yonetim Paneli</a></p>
+
+</body>
+</html>`)
+
+	return sb.String()
 }
 
 // makeRootHandler handles requests to "/"
@@ -180,18 +267,9 @@ func makeRootHandler(database *db.DB) http.HandlerFunc {
 			return
 		}
 
-		clientType, isTerminal := detectClient(r)
-		if !isTerminal {
-			// Redirect browser users to the dashboard panel
-			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
-			return
-		}
-
-		// Terminal clients (curl, wget, httpie) get the help JSON directly.
 		startTime := time.Now()
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 		scheme := schemeFor(r)
+
 		anims := database.GetAnimations()
 		animList := make([]map[string]string, 0, len(anims))
 		for _, a := range anims {
@@ -214,7 +292,28 @@ func makeRootHandler(database *db.DB) http.HandlerFunc {
 			},
 		}
 
-		_ = json.NewEncoder(w).Encode(helpData)
+		// Browser istekleri icin JSON + minimal HTML landing
+		clientType, isTerminal := detectClient(r)
+		if !isTerminal {
+			acceptsJSON := strings.Contains(r.Header.Get("Accept"), "application/json")
+			if acceptsJSON {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				enc := json.NewEncoder(w)
+				enc.SetIndent("", "  ")
+				_ = enc.Encode(helpData)
+			} else {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				_, _ = w.Write([]byte(renderLandingHTML(helpData, scheme, r.Host)))
+			}
+			_ = database.AddLog("root", getClientIP(r), r.Header.Get("User-Agent"), clientType, time.Since(startTime).Seconds())
+			return
+		}
+
+		// Terminal clients (curl, wget, httpie) get the help JSON directly.
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		_ = enc.Encode(helpData)
 
 		// Add run log for root query
 		_ = database.AddLog("root", getClientIP(r), r.Header.Get("User-Agent"), clientType, time.Since(startTime).Seconds())

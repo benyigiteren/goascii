@@ -166,15 +166,21 @@ func (s *AdminServer) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		avgDuration = sum / float64(len(allLogs))
 	}
 
-	// Build host address for display
-	host := r.Host
-	if !strings.Contains(host, "://") {
-		proto := "https"
-		if r.TLS != nil {
-			proto = "https"
+		// Build host address for display
+		host := r.Host
+		if !strings.Contains(host, "://") {
+			proto := "https"
+			if r.TLS != nil {
+				proto = "https"
+			} else if r.Header.Get("X-Forwarded-Proto") != "" {
+				proto = r.Header.Get("X-Forwarded-Proto")
+			} else if r.Header.Get("X-Forwarded-Ssl") == "on" {
+				proto = "https"
+			} else {
+				proto = "http"
+			}
+			host = proto + "://" + host
 		}
-		host = proto + "://" + host
-	}
 
 	// Dynamic errors/success decoding from query string
 	errQuery := r.URL.Query().Get("error")
@@ -233,9 +239,13 @@ func (s *AdminServer) HandleAdminInfo(w http.ResponseWriter, r *http.Request) {
 	uniqueIPs := s.DB.GetUniqueIPsCount()
 	clientCounts := s.DB.GetClientTypeCounts()
 
-	proto := "https"
-	if r.TLS == nil {
-		proto = "http"
+	proto := "http"
+	if r.TLS != nil {
+		proto = "https"
+	} else if r.Header.Get("X-Forwarded-Proto") != "" {
+		proto = r.Header.Get("X-Forwarded-Proto")
+	} else if r.Header.Get("X-Forwarded-Ssl") == "on" {
+		proto = "https"
 	}
 
 	payload := map[string]interface{}{
